@@ -1,10 +1,3 @@
 package jvn;
 
-public class RWState {
-
-	public enum s {r,w,nl,rc,wr,rwc};
-	public RWState() {
-		// TODO Auto-generated constructor stub
-	}
-
-}
+public enum RWState {R,W,NL,RC,WC,RWC};

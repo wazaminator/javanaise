@@ -8,6 +8,8 @@
 
 package jvn;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.*;
 
@@ -19,6 +21,7 @@ public class JvnServerImpl
 	
   // A JVN server is managed as a singleton 
 	private static JvnServerImpl js = null;
+	private JvnRemoteCoord coord;
 
   /**
   * Default constructor
@@ -26,7 +29,8 @@ public class JvnServerImpl
   **/
 	private JvnServerImpl() throws Exception {
 		super();
-		// to be completed
+		Registry r = LocateRegistry.getRegistry(1069);
+		coord = (JvnRemoteCoord) r.lookup("coord");
 	}
 	
   /**
@@ -62,7 +66,10 @@ public class JvnServerImpl
 	public  JvnObject jvnCreateObject(Serializable o)
 	throws jvn.JvnException { 
 		// to be completed 
-		return null; 
+		JvnObject jo = new JvnObjectImpl(o); //TODO implem
+		jo.id=2; // TODO getidbnj
+		//jo.jvnLockWrite();
+		return jo; 
 	}
 	
 	/**

@@ -47,6 +47,7 @@ public class Irc {
 	   
 	   } catch (Exception e) {
 		   System.out.println("IRC problem : " + e.getMessage());
+		   e.printStackTrace();
 	   }
 	}
 
