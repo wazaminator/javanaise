@@ -9,6 +9,7 @@
 package jvn;
 
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.io.Serializable;
 
 
@@ -16,13 +17,13 @@ public class JvnCoordImpl
               extends UnicastRemoteObject 
 							implements JvnRemoteCoord{
 	
-
-  /**
+	private HashMap<String,JvnObject> map ; 
+	/**
   * Default constructor
   * @throws JvnException
   **/
 	public JvnCoordImpl() throws Exception {
-		// to be completed
+		map  = new HashMap<String, JvnObject>();
 	}
 
   /**
@@ -46,7 +47,13 @@ public class JvnCoordImpl
   **/
   public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
   throws java.rmi.RemoteException,jvn.JvnException{
-    // to be completed 
+	  System.out.println("put : "+jon);
+		if(map.containsKey(jon)){
+			throw new JvnException("key already used");
+		}
+		else{
+			map.put(jon, jo);
+		}
   }
   
   /**
@@ -57,8 +64,8 @@ public class JvnCoordImpl
   **/
   public JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
   throws java.rmi.RemoteException,jvn.JvnException{
-    // to be completed 
-    return null;
+	  System.out.println("get : "+jon);
+	  return map.get(jon);
   }
   
   /**

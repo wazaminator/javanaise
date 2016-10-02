@@ -12,7 +12,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
 import java.io.*;
 
 
@@ -24,7 +23,7 @@ public class JvnServerImpl
   // A JVN server is managed as a singleton 
 	private static JvnServerImpl js = null;
 	private JvnRemoteCoord coord;
-	private HashMap<String,JvnObject> map ;
+	
   /**
   * Default constructor
   * @throws JvnException
@@ -33,7 +32,7 @@ public class JvnServerImpl
 		super();
 		Registry r = LocateRegistry.getRegistry(1069);
 		coord = (JvnRemoteCoord) r.lookup("coord");
-		map  = new HashMap<String, JvnObject>();
+
 	}
 	
   /**
@@ -46,6 +45,7 @@ public class JvnServerImpl
 			try {
 				js = new JvnServerImpl();
 			} catch (Exception e) {
+				e.printStackTrace();
 				return null;
 			}
 		}
@@ -77,7 +77,7 @@ public class JvnServerImpl
 			e.printStackTrace();
 		} //TODO implem
 		//jo.id=2; // TODO getidbnj
-		//jo.jvnLockWrite();
+		jo.jvnLockWrite();
 		return jo; 
 	}
 	
@@ -89,11 +89,13 @@ public class JvnServerImpl
 	**/
 	public  void jvnRegisterObject(String jon, JvnObject jo)
 	throws jvn.JvnException {
-		if(map.containsKey(jon)){
-			throw new JvnException("key allready used");
-		}
-		else{
-			map.put(jon, jo);
+		System.out.println("put : "+jon);
+		try {
+			coord.jvnRegisterObject(jon,
+					jo,
+					js);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -105,7 +107,17 @@ public class JvnServerImpl
 	**/
 	public  JvnObject jvnLookupObject(String jon)
 	throws jvn.JvnException {
-		return map.get(jon);
+		JvnObject jo = null;
+		try {
+			System.out.println(js.toString());
+			jo = coord.jvnLookupObject(jon, this);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		catch(IllegalArgumentException e){
+			e.printStackTrace();
+		}
+		return jo;
 	}	
 	
 	/**

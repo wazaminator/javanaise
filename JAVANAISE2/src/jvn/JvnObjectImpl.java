@@ -47,7 +47,7 @@ public class JvnObjectImpl extends UnicastRemoteObject implements JvnObject {
 		case WC : 
 			state=RWState.RWC;
 		default :
-			System.out.println("erreur dans lockread");
+			System.out.println("erreur dans lockread : "+state.toString());
 		}
 	}
 
