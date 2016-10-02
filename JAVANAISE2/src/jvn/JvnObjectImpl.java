@@ -16,20 +16,25 @@ public class JvnObjectImpl extends UnicastRemoteObject implements JvnObject {
 	Invalidate invalidate;
 	public JvnObjectImpl() throws RemoteException {
 		// TODO Auto-generated constructor stub
+		state=RWState.NL;
 	}
 
 	public JvnObjectImpl(int port) throws RemoteException {
 		super(port);
 		// TODO Auto-generated constructor stub
+		state=RWState.NL;
 	}
 
 	public JvnObjectImpl(int port, RMIClientSocketFactory csf, RMIServerSocketFactory ssf) throws RemoteException {
 		super(port, csf, ssf);
 		// TODO Auto-generated constructor stub
+		state=RWState.NL;
 	}
 
 	public JvnObjectImpl(Serializable o) throws RemoteException{
 		// TODO Auto-generated constructor stub
+		state=RWState.NL;
+		object=o;
 	}
 
 	public void jvnLockRead() throws JvnException {
