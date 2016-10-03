@@ -17,6 +17,7 @@ import java.io.*;
 
 public interface JvnObject extends Serializable {
 
+
 	/**
 	* Get a Read lock on the object 
 	* @throws JvnException

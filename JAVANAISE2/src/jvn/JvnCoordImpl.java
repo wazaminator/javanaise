@@ -18,12 +18,14 @@ public class JvnCoordImpl
 							implements JvnRemoteCoord{
 	
 	private HashMap<String,JvnObject> map ; 
+	int id;
 	/**
   * Default constructor
   * @throws JvnException
   **/
 	public JvnCoordImpl() throws Exception {
 		map  = new HashMap<String, JvnObject>();
+		id=1;
 	}
 
   /**
@@ -33,8 +35,7 @@ public class JvnCoordImpl
   **/
   public int jvnGetObjectId()
   throws java.rmi.RemoteException,jvn.JvnException {
-    // to be completed 
-    return 0;
+    return id++;
   }
   
   /**

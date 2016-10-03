@@ -8,62 +8,114 @@ import java.rmi.server.UnicastRemoteObject;
 
 import com.sun.corba.se.spi.orbutil.fsm.State;
 
-public class JvnObjectImpl extends UnicastRemoteObject implements JvnObject {
+public class JvnObjectImpl implements JvnObject {
 
-	
+	JvnServerImpl js;
 	Serializable object;
 	RWState state;
 	Invalidate invalidate;
+	int id;
+
 	public JvnObjectImpl() throws RemoteException {
 		// TODO Auto-generated constructor stub
-		state=RWState.NL;
+		state = RWState.NL;
 	}
 
-	public JvnObjectImpl(int port) throws RemoteException {
-		super(port);
-		// TODO Auto-generated constructor stub
-		state=RWState.NL;
-	}
-
-	public JvnObjectImpl(int port, RMIClientSocketFactory csf, RMIServerSocketFactory ssf) throws RemoteException {
-		super(port, csf, ssf);
-		// TODO Auto-generated constructor stub
-		state=RWState.NL;
-	}
-
-	public JvnObjectImpl(Serializable o) throws RemoteException{
-		// TODO Auto-generated constructor stub
-		state=RWState.NL;
-		object=o;
+	public JvnObjectImpl(Serializable o, JvnServerImpl jvnServerImpl, int joi) throws RemoteException {
+		this.js = jvnServerImpl;
+		this.id = joi;
+		state = RWState.NL;
+		object = o;
 	}
 
 	public void jvnLockRead() throws JvnException {
 		switch (state) {
-		case  RC : 
-		case  NL :	
-			state=RWState.R;
-			//TODO apel serv
+		case RC:
+			state = RWState.R;
 			break;
-		case WC : 
-			state=RWState.RWC;
-		default :
-			System.out.println("erreur dans lockread : "+state.toString());
+		case NL:
+			js.jvnLockRead(id);
+			state = RWState.R;
+			break;
+		case WC:
+			state = RWState.RWC;
+		default:
+			System.out.println("erreur dans lockread : " + state.toString());
 		}
 	}
 
 	public void jvnLockWrite() throws JvnException {
-		// TODO Auto-generated method stub
+		switch (state) {
+
+		case WC:
+			state = RWState.W;
+		case RC:
+		case NL:
+			js.jvnLockWrite(id);
+			state = RWState.W;
+			break;
+		default:
+			System.out.println("erreur dans lockread : " + state.toString());
+		}
 
 	}
 
 	public void jvnUnLock() throws JvnException {
 		// TODO Auto-generated method stub
+		if (invalidate == Invalidate.NL) {
+			switch (state) {
+			case R:
+				state = RWState.RC;
+				break;
+			case RWC:
+			case W:
+				state = RWState.WC;
+				break;
+			default : 
+				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
+			}
+		}
+		else if(invalidate==Invalidate.R){
+			switch (state) {
+			case R:
+			case W:
+			case RWC:
+				//TODO appel serveur notify
+				state=RWState.NL;
+				break;
+				
+			default :
+				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
+			}
+		}
+		else if(invalidate==Invalidate.W){
+			switch (state) {
+			case W:
+			case RWC:
+				//TODO appel serveur notify
+				state=RWState.NL;
+				break;
+				
+			default :
+				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
+			}
+		}
+		else if(invalidate==Invalidate.RW){
+			switch (state) {
+			case W:
+				//TODO appel serveur notify
+				state=RWState.NL;
+				break;
+				
+			default :
+				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
+			}
+		}
 
 	}
 
 	public int jvnGetObjectId() throws JvnException {
-		// TODO Auto-generated method stub
-		return 0;
+		return id;
 	}
 
 	public Serializable jvnGetObjectState() throws JvnException {
@@ -72,56 +124,55 @@ public class JvnObjectImpl extends UnicastRemoteObject implements JvnObject {
 
 	public void jvnInvalidateReader() throws JvnException {
 		switch (state) {
-		case  RC : 
-		case WC: 
-		  state=RWState.NL;
-		  break;
-		
-		case R :
-		case W :
+		case RC:
+		case WC:
+			state = RWState.NL;
+			break;
+
+		case R:
+		case W:
 		case RWC:
-		invalidate=Invalidate.R;
-		break;
-		default : 
-			//TODO trow exception
+			invalidate = Invalidate.R;
+			break;
+		default:
+			// TODO trow exception
 			System.out.println("erreur dans invalidatereader");
 		}
-		
+
 	}
 
 	public Serializable jvnInvalidateWriter() throws JvnException {
 		switch (state) {
-		case WC: 
-		  state=RWState.NL;
-		  break;
-		
-		case W :
-			invalidate=Invalidate.W;
+		case WC:
+			state = RWState.NL;
+			break;
+
+		case W:
+			invalidate = Invalidate.W;
 		case RWC:
-		state=RWState.R;
-		break;
-		default : 
-			//TODO trow exception
+			state = RWState.R;
+			invalidate = Invalidate.W;
+			break;
+		default:
+			// TODO trow exception
 			System.out.println("erreur dans invalidatewriter");
-		}	
+		}
 		return object;
 	}
 
 	public Serializable jvnInvalidateWriterForReader() throws JvnException {
 		switch (state) {
-		case WC: 
-		  state=RWState.R;
-		  break;
-		
-		case W :
-			invalidate=Invalidate.RW;
 		case RWC:
-		state=RWState.R;
-		break;
-		default : 
-			//TODO trow exception
+		case WC:
+			state = RWState.RC;
+			break;
+		case W:
+			invalidate = Invalidate.RW;
+			break;
+		default:
+			// TODO trow exception
 			System.out.println("erreur dans invalidatewriterforreader");
-		}	
+		}
 		return object;
 	}
 

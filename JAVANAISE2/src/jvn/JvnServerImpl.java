@@ -71,7 +71,8 @@ public class JvnServerImpl
 		// to be completed 
 		JvnObject jo = null;
 		try {
-			jo = new JvnObjectImpl(o);
+			
+			jo = new JvnObjectImpl(o,this,coord.jvnGetObjectId());
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -129,7 +130,14 @@ public class JvnServerImpl
    public Serializable jvnLockRead(int joi)
 	 throws JvnException {
 		// to be completed 
-		return null;
+	   Serializable o=null;
+	   try {
+		o=coord.jvnLockRead(joi, js);
+	} catch (RemoteException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+		return o;
 
 	}	
 	/**
