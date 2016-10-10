@@ -12,13 +12,21 @@ import java.awt.event.*;
 
 import jvn.*;
 import java.io.*;
+import java.util.logging.Logger;
+
+import javax.swing.plaf.synth.SynthSeparatorUI;
 
 public class Irc {
+	
+	private static final Logger LOGGER = Logger.getLogger(Irc.class.getName());
+	
 	public TextArea text;
 	public TextField data;
 	Frame frame;
 	JvnObject sentence;
 
+	
+	
 	/**
 	 * main method create a JVN object nammed IRC for representing the Chat
 	 * application
@@ -32,12 +40,17 @@ public class Irc {
 			// look up the IRC object in the JVN server
 			// if not found, create it, and register it in the JVN server
 			JvnObject jo = js.jvnLookupObject("IRC");
-
+			
 			if (jo == null) {
+				LOGGER.info("not found");
 				jo = js.jvnCreateObject((Serializable) new Sentence());
 				// after creation, I have a write lock on the object
 				jo.jvnUnLock();
 				js.jvnRegisterObject("IRC", jo);
+			}
+			else{
+				jo = new JvnObjectImpl(jo.jvnGetObjectId(),jo.jvnGetObjectState());
+				js.jvnRegister(jo);
 			}
 			// create the graphical part of the Chat application
 			new Irc(jo);

@@ -69,6 +69,8 @@ public interface JvnLocalServer {
     **/
    public  void jvnTerminate()
    throws jvn.JvnException; 
+   
+   public void jvnRegister(JvnObject jo);
 }
 
  

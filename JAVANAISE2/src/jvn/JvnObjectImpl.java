@@ -2,32 +2,34 @@ package jvn;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.rmi.server.RMIClientSocketFactory;
-import java.rmi.server.RMIServerSocketFactory;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.logging.Logger;
 
-import com.sun.corba.se.spi.orbutil.fsm.State;
-
+@SuppressWarnings("serial")
 public class JvnObjectImpl implements JvnObject {
 
 	private static final Logger LOGGER = Logger.getLogger(JvnObjectImpl.class.getName());
 
 	Serializable object;
-	RWState state;
+	public transient RWState state;
 	int id;
 
 	public JvnObjectImpl(int joId, Serializable o) throws RemoteException {
 		this.id = joId;
+		state = RWState.NL;
+		object = o;
+	}
+	public JvnObjectImpl(int i,Serializable o,boolean g)throws RemoteException {
+		this.id = i;
 		state = RWState.W;
 		object = o;
 	}
 
 	public void jvnLockRead() throws JvnException {
+		LOGGER.info("trying to lockread +("+state+")");
 		switch (state) {
 		case NL:
-			state = RWState.R;
 			object = JvnServerImpl.jvnGetServer().jvnLockRead(id);
+			state = RWState.R;
 			break;
 		case RC:
 			state = RWState.R;
@@ -36,19 +38,21 @@ public class JvnObjectImpl implements JvnObject {
 			state = RWState.RWC;
 			break;
 		default:
+
 			throw new JvnException("Error while taking read lock ("+state+")");
 		}
 	}
 
 	public void jvnLockWrite() throws JvnException {
+		LOGGER.info("trying to lockwrite +("+state+")");
 		switch (state) {
 		case NL:
-			state = RWState.W;
 			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
+			state = RWState.W;
 			break;
-		case RC:
-			state = RWState.W;
+		case RC:		
 			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
+			state = RWState.W;
 			break;
 		case WC:
 			state = RWState.W;
@@ -95,6 +99,7 @@ public class JvnObjectImpl implements JvnObject {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			state = RWState.NL;
 			break;
 		default:
 			throw new JvnException("erreur dans invalidatereader ("+state+")");
@@ -116,6 +121,7 @@ public class JvnObjectImpl implements JvnObject {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			state = RWState.NL;
 			break;
 		default:
 			throw new JvnException("erreur dans invalidatewriter ("+state+")");
@@ -130,9 +136,9 @@ public class JvnObjectImpl implements JvnObject {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			state = RWState.RC;
 			break;
 		case WC:
 			state = RWState.RC;
