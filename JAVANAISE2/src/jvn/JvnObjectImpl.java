@@ -5,113 +5,73 @@ import java.rmi.RemoteException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.logging.Logger;
 
 import com.sun.corba.se.spi.orbutil.fsm.State;
 
 public class JvnObjectImpl implements JvnObject {
 
-	JvnServerImpl js;
+	private static final Logger LOGGER = Logger.getLogger(JvnObjectImpl.class.getName());
+
 	Serializable object;
 	RWState state;
-	Invalidate invalidate;
 	int id;
 
-	public JvnObjectImpl() throws RemoteException {
-		// TODO Auto-generated constructor stub
-		state = RWState.NL;
-	}
-
-	public JvnObjectImpl(Serializable o, JvnServerImpl jvnServerImpl, int joi) throws RemoteException {
-		this.js = jvnServerImpl;
-		this.id = joi;
-		state = RWState.NL;
+	public JvnObjectImpl(int joId, Serializable o) throws RemoteException {
+		this.id = joId;
+		state = RWState.W;
 		object = o;
 	}
 
 	public void jvnLockRead() throws JvnException {
 		switch (state) {
-		case RC:
-			state = RWState.R;
-			break;
 		case NL:
-			js.jvnLockRead(id);
+			state = RWState.R;
+			object = JvnServerImpl.jvnGetServer().jvnLockRead(id);
+			break;
+		case RC:
 			state = RWState.R;
 			break;
 		case WC:
 			state = RWState.RWC;
+			break;
 		default:
-			System.out.println("erreur dans lockread : " + state.toString());
+			throw new JvnException("Error while taking read lock ("+state+")");
 		}
 	}
 
 	public void jvnLockWrite() throws JvnException {
 		switch (state) {
-
-		case WC:
-			state = RWState.W;
-		case RC:
 		case NL:
-			js.jvnLockWrite(id);
+			state = RWState.W;
+			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
+			break;
+		case RC:
+			state = RWState.W;
+			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
+			break;
+		case WC:
 			state = RWState.W;
 			break;
 		default:
-			System.out.println("erreur dans lockread : " + state.toString());
+			throw new JvnException("Error while taking write lock ("+state+")");
 		}
-
 	}
 
-	public void jvnUnLock() throws JvnException {
-		// TODO Auto-generated method stub
-		if (invalidate == Invalidate.NL) {
-			switch (state) {
-			case R:
-				state = RWState.RC;
-				break;
-			case RWC:
-			case W:
-				state = RWState.WC;
-				break;
-			default : 
-				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
-			}
+	synchronized public void jvnUnLock() throws JvnException {
+		switch (state) {
+		case R:
+			state = RWState.RC;
+			break;
+		case RWC:
+		case W:
+			state = RWState.WC;
+			break;
+		default:
+			throw new JvnException("erreur dans jvnunlock ("+state+")");
 		}
-		else if(invalidate==Invalidate.R){
-			switch (state) {
-			case R:
-			case W:
-			case RWC:
-				//TODO appel serveur notify
-				state=RWState.NL;
-				break;
-				
-			default :
-				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
-			}
-		}
-		else if(invalidate==Invalidate.W){
-			switch (state) {
-			case W:
-			case RWC:
-				//TODO appel serveur notify
-				state=RWState.NL;
-				break;
-				
-			default :
-				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
-			}
-		}
-		else if(invalidate==Invalidate.RW){
-			switch (state) {
-			case W:
-				//TODO appel serveur notify
-				state=RWState.NL;
-				break;
-				
-			default :
-				System.out.println("erreur dans unlock.state : " + state.toString() +" /inv :  "+ invalidate.toString());
-			}
-		}
-
+		
+		notify();
 	}
 
 	public int jvnGetObjectId() throws JvnException {
@@ -125,18 +85,19 @@ public class JvnObjectImpl implements JvnObject {
 	public void jvnInvalidateReader() throws JvnException {
 		switch (state) {
 		case RC:
-		case WC:
 			state = RWState.NL;
 			break;
-
 		case R:
-		case W:
 		case RWC:
-			invalidate = Invalidate.R;
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			break;
 		default:
-			// TODO trow exception
-			System.out.println("erreur dans invalidatereader");
+			throw new JvnException("erreur dans invalidatereader ("+state+")");
 		}
 
 	}
@@ -148,14 +109,16 @@ public class JvnObjectImpl implements JvnObject {
 			break;
 
 		case W:
-			invalidate = Invalidate.W;
 		case RWC:
-			state = RWState.R;
-			invalidate = Invalidate.W;
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			break;
 		default:
-			// TODO trow exception
-			System.out.println("erreur dans invalidatewriter");
+			throw new JvnException("erreur dans invalidatewriter ("+state+")");
 		}
 		return object;
 	}
@@ -163,17 +126,27 @@ public class JvnObjectImpl implements JvnObject {
 	public Serializable jvnInvalidateWriterForReader() throws JvnException {
 		switch (state) {
 		case RWC:
+		case W:
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
 		case WC:
 			state = RWState.RC;
 			break;
-		case W:
-			invalidate = Invalidate.RW;
-			break;
 		default:
-			// TODO trow exception
-			System.out.println("erreur dans invalidatewriterforreader");
+			throw new JvnException("erreur dans invalidatewriterforreader ("+state+")");
 		}
 		return object;
 	}
+
+	public void set(Serializable obj) throws JvnException {
+		object = obj;
+	}
+	
+	
 
 }
