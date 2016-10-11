@@ -55,6 +55,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * @throws JvnException
 	 **/
 	public JvnCoordImpl() throws Exception {
+		
 		jvnObjects = new HashMap<Integer, JvnObject>();
 		jvnObjectNames = new HashMap<String, Integer>();
 		distServersObjects = new HashMap<JvnRemoteServer, List<JvnObject>>();
@@ -120,14 +121,13 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 		LOGGER.info("Looking up for object " + jon);
 		JvnObject jo = jvnObjects.get(jvnObjectNames.get(jon));
-		if (jo == null) { // Object not found
+		if (jo == null) {
 			LOGGER.info("Object " + jon + " not found.");
 			return null;
 		} else {
-			LOGGER.info("found, id = " + jo.jvnGetObjectId());
+			LOGGER.info("Object "+jon+" found, id = " + jo.jvnGetObjectId());
 
-			if (distServersObjects.get(js) == null) { // This server is not
-														// registered
+			if (distServersObjects.get(js) == null) {
 				LOGGER.info("Server not registered, registering it.");
 				distServersObjects.put(js, new ArrayList<JvnObject>());
 			}
@@ -150,22 +150,19 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 *             JvnException
 	 **/
 	public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-		LOGGER.info("Locking read on obj " + joi);
+		LOGGER.info("Received read request for object " + joi);
 		JvnRemoteServer serverInWriteMode = serversInWriteMode.get(joi);
 		Serializable tmpObj = null;
 		if (serverInWriteMode == null) { // no one is in write mode
-			LOGGER.info("no one is writing, passing on");
+			LOGGER.info("No one is writing, passing on");
 			tmpObj = jvnObjects.get(joi).jvnGetObjectState();
 		} else {
-			// Someone is in write mode on this object
-			LOGGER.info("someone has write lock " + serverInWriteMode.toString());
+			LOGGER.info(serverInWriteMode.toString()+" has write lock on object "+joi+ ". Invalidating");
 			tmpObj = serverInWriteMode.jvnInvalidateWriterForReader(joi);
 			serversInWriteMode.remove(joi);
 			serversInReadMode.get(joi).add(js);
-
 			jvnObjects.get(joi).set(tmpObj);
 		}
-
 		serversInReadMode.get(joi).add(js);
 		return tmpObj;
 	}
@@ -201,11 +198,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 		if (l == null) {
 			l = new ArrayList<JvnRemoteServer>();
 		} else {
-			LOGGER.info("someone is reading ");
+			LOGGER.info("someone is reading. (Nb readers: "+l.size()+")");
 			for (JvnRemoteServer remoteServer : l) {
-				if (!remoteServer.equals(js)) {
-					remoteServer.jvnInvalidateReader(joi);
-				}
+				remoteServer.jvnInvalidateReader(joi);
 			}
 		}
 		ArrayList<JvnRemoteServer> tmp = new ArrayList<JvnRemoteServer>();

@@ -25,7 +25,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	public void jvnLockRead() throws JvnException {
-		LOGGER.info("trying to lockread +("+state+")");
+		LOGGER.info("Obj: Trying to lockread (From: "+state+")");
 		switch (state) {
 		case NL:
 			object = JvnServerImpl.jvnGetServer().jvnLockRead(id);
@@ -44,7 +44,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	public void jvnLockWrite() throws JvnException {
-		LOGGER.info("trying to lockwrite +("+state+")");
+		LOGGER.info("Obj: trying to lockwrite (From: "+state+")");
 		switch (state) {
 		case NL:
 			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
@@ -63,6 +63,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	synchronized public void jvnUnLock() throws JvnException {
+		LOGGER.info("Obj: trying to unlock (From: "+state+")");
 		switch (state) {
 		case R:
 			state = RWState.RC;
@@ -72,7 +73,7 @@ public class JvnObjectImpl implements JvnObject {
 			state = RWState.WC;
 			break;
 		default:
-			throw new JvnException("erreur dans jvnunlock ("+state+")");
+			throw new JvnException("Erreur dans jvnunlock ("+state+")");
 		}
 		
 		notify();
@@ -87,6 +88,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	public void jvnInvalidateReader() throws JvnException {
+		LOGGER.info("Obj: trying to invalidate read (From: "+state+")");
 		switch (state) {
 		case RC:
 			state = RWState.NL;
@@ -108,6 +110,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	public Serializable jvnInvalidateWriter() throws JvnException {
+		LOGGER.info("Obj: trying to invalidate writer (From: "+state+")");
 		switch (state) {
 		case WC:
 			state = RWState.NL;
@@ -130,6 +133,7 @@ public class JvnObjectImpl implements JvnObject {
 	}
 
 	public Serializable jvnInvalidateWriterForReader() throws JvnException {
+		LOGGER.info("Obj: trying to invalidate writer for reader (From: "+state+")");
 		switch (state) {
 		case RWC:
 		case W:

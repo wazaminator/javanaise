@@ -84,12 +84,13 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 			jo = new JvnObjectImpl(coord.jvnGetObjectId(), o);
 			jo.jvnLockWrite();
 			objects.put(jo.jvnGetObjectId(), jo);
+
+			LOGGER.info("Object created with a write lock");
 			return jo;
 		} catch (RemoteException e) {
 			LOGGER.log(Level.WARNING, "Error while creating object.", e);
 			throw new JvnException("Cannot create object.");
 		}
-
 	}
 
 	/**
@@ -130,6 +131,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 			e.printStackTrace();
 		}
 		if (jo != null) {
+			LOGGER.info("Object " + jon + " found");
 			objects.put(jo.jvnGetObjectId(), jo);
 		}
 		return jo;
@@ -144,11 +146,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	 * @throws JvnException
 	 **/
 	public Serializable jvnLockRead(int joi) throws JvnException {
-		LOGGER.info("trying to lockread +(" + joi + ")");
+		LOGGER.info("Trying to get lockread on object " + joi);
 		try {
 			return coord.jvnLockRead(joi, this);
 		} catch (RemoteException e) {
-			throw new JvnException("Cannot take read lock");
+			throw new JvnException("Cannot take read lock on object " + joi);
 		}
 	}
 
@@ -161,7 +163,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	 * @throws JvnException
 	 **/
 	public Serializable jvnLockWrite(int joi) throws JvnException {
-		LOGGER.info("trying to lockwrite id:+(" + joi + ")");
+		LOGGER.info("Trying to get lockwrite on object " + joi);
 		try {
 			return coord.jvnLockWrite(joi, this);
 		} catch (RemoteException e) {
