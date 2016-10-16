@@ -18,8 +18,6 @@ or
 - Manual tests :
     Directly via the chat implementation
 
-Describe and show how to run the tests with code examples.
-
 ## Contributors
 
 - Clément B.
