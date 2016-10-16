@@ -26,6 +26,9 @@ public class JvnObjectImpl implements JvnObject {
 
 	public void jvnLockRead() throws JvnException {
 		LOGGER.info("Obj: Trying to lockread (From: "+state+")");
+		if(state == null){
+			state = state.NL;
+		}
 		switch (state) {
 		case NL:
 			object = JvnServerImpl.jvnGetServer().jvnLockRead(id);
@@ -62,7 +65,7 @@ public class JvnObjectImpl implements JvnObject {
 		}
 	}
 
-	synchronized public void jvnUnLock() throws JvnException {
+	public synchronized void jvnUnLock() throws JvnException {
 		LOGGER.info("Obj: trying to unlock (From: "+state+")");
 		switch (state) {
 		case R:
@@ -101,10 +104,7 @@ public class JvnObjectImpl implements JvnObject {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			state = RWState.NL;
 			break;
-		default:
-			throw new JvnException("erreur dans invalidatereader ("+state+")");
 		}
 
 	}

@@ -55,7 +55,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * @throws JvnException
 	 **/
 	public JvnCoordImpl() throws Exception {
-		
+
 		jvnObjects = new HashMap<Integer, JvnObject>();
 		jvnObjectNames = new HashMap<String, Integer>();
 		distServersObjects = new HashMap<JvnRemoteServer, List<JvnObject>>();
@@ -70,7 +70,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * 
 	 * @throws java.rmi.RemoteException,JvnException
 	 **/
-	public int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
+	public synchronized int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
 		return id++;
 	}
 
@@ -87,7 +87,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 *            : the remote reference of the JVNServer
 	 * @throws java.rmi.RemoteException,JvnException
 	 **/
-	public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
+	public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
 			throws java.rmi.RemoteException, jvn.JvnException {
 		LOGGER.info("Registering object " + jon);
 		int tempIdentifier = jo.jvnGetObjectId();
@@ -118,14 +118,14 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 *            : the remote reference of the JVNServer
 	 * @throws java.rmi.RemoteException,JvnException
 	 **/
-	public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
+	public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 		LOGGER.info("Looking up for object " + jon);
 		JvnObject jo = jvnObjects.get(jvnObjectNames.get(jon));
 		if (jo == null) {
 			LOGGER.info("Object " + jon + " not found.");
 			return null;
 		} else {
-			LOGGER.info("Object "+jon+" found, id = " + jo.jvnGetObjectId());
+			LOGGER.info("Object " + jon + " found, id = " + jo.jvnGetObjectId());
 
 			if (distServersObjects.get(js) == null) {
 				LOGGER.info("Server not registered, registering it.");
@@ -149,7 +149,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * @throws java.rmi.RemoteException,
 	 *             JvnException
 	 **/
-	public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+	public synchronized Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
 		LOGGER.info("Received read request for object " + joi);
 		JvnRemoteServer serverInWriteMode = serversInWriteMode.get(joi);
 		Serializable tmpObj = null;
@@ -157,7 +157,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 			LOGGER.info("No one is writing, passing on");
 			tmpObj = jvnObjects.get(joi).jvnGetObjectState();
 		} else {
-			LOGGER.info(serverInWriteMode.toString()+" has write lock on object "+joi+ ". Invalidating");
+			LOGGER.info(serverInWriteMode.toString() + " has write lock on object " + joi + ". Invalidating");
 			tmpObj = serverInWriteMode.jvnInvalidateWriterForReader(joi);
 			serversInWriteMode.remove(joi);
 			serversInReadMode.get(joi).add(js);
@@ -178,7 +178,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * @throws java.rmi.RemoteException,
 	 *             JvnException
 	 **/
-	public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+	public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
 		LOGGER.info("Locking write on object " + joi);
 		JvnRemoteServer serverInWriteMode = serversInWriteMode.get(joi);
 		Serializable tmpObj = null;
@@ -198,7 +198,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 		if (l == null) {
 			l = new ArrayList<JvnRemoteServer>();
 		} else {
-			LOGGER.info("someone is reading. (Nb readers: "+l.size()+")");
+			LOGGER.info("someone is reading. (Nb readers: " + l.size() + ")");
 			for (JvnRemoteServer remoteServer : l) {
 				remoteServer.jvnInvalidateReader(joi);
 			}
@@ -218,7 +218,15 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	 * @throws java.rmi.RemoteException,
 	 *             JvnException
 	 **/
-	public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-		// to be completed
-	}
+	public synchronized void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+		for(JvnObject jo : distServersObjects.get(js)) {
+			List<JvnRemoteServer> reading = serversInReadMode.get(jo.jvnGetObjectId());
+			reading.remove(js);
+			JvnRemoteServer writing = serversInWriteMode.get(jo.jvnGetObjectId());
+			if(writing == js) {
+				serversInWriteMode.put(jo.jvnGetObjectId(),null);
+			}
+		}
+		
+		distServersObjects.remove(js);	}
 }
