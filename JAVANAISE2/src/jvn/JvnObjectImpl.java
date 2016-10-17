@@ -48,6 +48,9 @@ public class JvnObjectImpl implements JvnObject {
 
 	public void jvnLockWrite() throws JvnException {
 		LOGGER.info("Obj: trying to lockwrite (From: "+state+")");
+		if(state == null){
+			state = state.NL;
+		}
 		switch (state) {
 		case NL:
 			JvnServerImpl.jvnGetServer().jvnLockWrite(id);
