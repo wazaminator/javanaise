@@ -1,7 +1,7 @@
 # Javanaise
 ## Synopsis
 
-This is a univerity project made durring the M2 PGI at UGA
+This is a univerity project made durring the M2 PGI at UGotAids
 This project is meant to learn implement a distributed object cache "JAVANAISE"
 
 ## Installation
